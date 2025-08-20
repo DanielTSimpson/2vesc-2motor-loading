@@ -56,7 +56,7 @@ def main():
                 active_data = parse_can_status(msg_active)
             
             if msg_load and msg_active:
-                print(f"LOAD CURRENT: {load_data[current]} A \t ACTIVE CURRENT: {active_data[current]} \t")
+                print(f"LOAD CURRENT: {load_data['current']} A \t ACTIVE CURRENT: {active_data['current']} \t")
             
             time.sleep(0.2)
 
