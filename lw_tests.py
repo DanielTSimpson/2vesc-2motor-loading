@@ -3,7 +3,7 @@ import time
 import can
 
 # Configuration
-CHANNEL_LOAD = 'can1'    #"Load" is the motor that is inducing some load
+CHANNEL_LOAD = 'can1'    #"Load" is the motor that is inducing some load (for some reason the can ports are swapped compared to what's shown on the hat board)
 CHANNEL_ACTIVE = 'can0'  #"Active" is the motor trying to match the induced load
 BITRATE = 500000
 ID_LOAD = 10
@@ -20,18 +20,22 @@ def make_current(vesc_id, current_amps):
     return can.Message(arbitration_id = eid, data = data, is_extended_id = True)
 
 
-def parse_status(msg):
+def parse_can_status(msg):
     """Parse a status frame"""
-    mA, = struct.unpack('>i', msg.data[0:4])
-    amps = mA / 1000.0
-    return amps
+    packet_id = (msg.arbitration_id >> 8) & 0xFF
+    data = msg.data
+    
+    print(msg)
+    duty = int.from_bytes(msg.data[6:8], 'big', signed=True) / 10.0 # %
+    current = int.from_bytes(msg.data[4:6], 'big', signed=True) / 10.0 # A
+    rpm = int.from_bytes(msg.data[0:4], 'big', signed=True) # RPM
+
+    return {"duty":duty, "current":current, "rpm":rpm}
 
 
 def main():
     bus_load = can.Bus(interface='socketcan', channel=CHANNEL_LOAD, bitrate=BITRATE)
     bus_active = can.Bus(interface='socketcan', channel=CHANNEL_ACTIVE, bitrate=BITRATE)
-    notifier0 = can.Notifier(bus_load, [can.Printer(),])
-    notifier1 = can.Notifier(bus_active, [can.Printer(),])
 
     try:
         while True:
@@ -42,19 +46,24 @@ def main():
 
             msg_load = bus_load.recv(timeout=1.0)
             msg_active = bus_active.recv(timeout=1.0)
+            
+            load_data = None
+            active_data = None
 
             if msg_load:
-                print(f"Load status ({hex(msg_load.arbitration_id)}): {parse_status(msg_load):.3f} A")
+                load_data = parse_can_status(msg_load)
             if msg_active:
-                print(f"Active status ({hex(msg_active.arbitration_id)}): {parse_status(msg_active):.3f} A")
+                active_data = parse_can_status(msg_active)
+            
+            if msg_load and msg_active:
+                print(f"LOAD CURRENT: {load_data[current]} A \t ACTIVE CURRENT: {active_data[current]} \t")
+            
             time.sleep(0.2)
 
     except KeyboardInterrupt:
         print("Shutting down...")
 
     finally:
-        notifier0.stop()
-        notifier1.stop()
         bus_load.shutdown()
         bus_active.shutdown()
 
