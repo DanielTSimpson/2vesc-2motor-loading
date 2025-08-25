@@ -19,6 +19,11 @@ def make_current(vesc_id, current_amps):
     data = struct.pack('>i',value)
     return can.Message(arbitration_id = eid, data = data, is_extended_id = True)
 
+def make_rpm(vesc_id, speed_rpm):
+    """Create a CAN message to command revolutions per minute"""
+    eid = (CAN_CMD_SET_RPM << 8) | vesc_id
+    value = int(rpm)
+    data = struct.pack('>i',value)
 
 def parse_can_status(msg):
     """Parse a status frame"""
@@ -42,7 +47,7 @@ def main():
             bus_load.send(make_current(ID_LOAD, 3))
             bus_active.send(make_current(ID_ACTIVE, 0.7))
             
-            time.sleep(0.2)
+            time.sleep(1/60)
 
             msg_load = bus_load.recv(timeout=1.0)
             msg_active = bus_active.recv(timeout=1.0)
@@ -58,7 +63,7 @@ def main():
             if msg_load and msg_active:
                 print(f"LOAD CURRENT: {load_data['current']} A \t ACTIVE CURRENT: {active_data['current']} \t")
             
-            time.sleep(0.2)
+            time.sleep(1/60)
 
     except KeyboardInterrupt:
         print("Shutting down...")
