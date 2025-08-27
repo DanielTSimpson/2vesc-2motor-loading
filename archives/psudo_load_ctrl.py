@@ -35,7 +35,6 @@ def pseudo_load(input_load: float):
 def main():
     try:
         while True:
-
             load_vesc.set_current(3)
             active_vesc.set_current(-3)
             time.sleep(1)

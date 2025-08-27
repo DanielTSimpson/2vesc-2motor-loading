@@ -19,9 +19,12 @@ active_vesc = VESC(can_channel = CHANNEL_ACTIVE, vesc_id = ID_ACTIVE)
 def main():
     try:
         while True:
-            load_vesc.set_current(3)
-            active_vesc.set_current(-3)
+            load_vesc.set_erpm(6000)
+            active_vesc.set_erpm(-6000)
             time.sleep(1)
+            load_speed = float(load_vesc.get_erpm())
+            active_speed = float(active_vesc.get_erpm())
+            print(f"Load Speed: {load_speed} \t Active Speed: {active_speed}")
 
     except KeyboardInterrupt:
         print("Shutting down...")
